@@ -679,22 +679,22 @@ function isReconYes(r){ return(r['Recon Upfront']||'').trim().toLowerCase()==='y
 
 // ── INIT (called after data loads) ────────────────────────────────────
 function initDashboard(unsettledRows, settledAgg){
-  window.SETTLED_AGG = settledAgg;
+  ###window.SETTLED_AGG_ASSIGN###
   window.allU = unsettledRows.map(r=>({...r,_days:daysBetween(r['DOD']),_bucket:getBucket(daysBetween(r['DOD']))}));
   const today=new Date(); today.setHours(0,0,0,0);
   document.getElementById('today-disp').textContent=today.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
-  window.totalAll = allU.length + SETTLED_AGG.reduce((s,r)=>s+r.n,0);
+  window.totalAll = window.allU.length + window.SETTLED_AGG.reduce((s,r)=>s+r.n,0);
 
 // Build unsettled filters
 ['City Bucket','Category','Insurance Name'].forEach((col,i)=>{
   const id=['f-city','f-cat','f-ins'][i];
   const el=document.getElementById(id);
-  uniq(allU,col).forEach(v=>el.add(new Option(v,v)));
+  uniq(window.allU,col).forEach(v=>el.add(new Option(v,v)));
 });
 // Build settled filters
-const sCities=uniq(SETTLED_AGG.map(r=>({...r,'City Bucket':r.city})),'City Bucket');
-const sCats=uniq(SETTLED_AGG.map(r=>({...r,'Category':r.cat})),'Category');
-const sIns=[...new Set(SETTLED_AGG.map(r=>r.ins).filter(Boolean))].sort();
+const sCities=uniq(window.SETTLED_AGG.map(r=>({...r,'City Bucket':r.city})),'City Bucket');
+const sCats=uniq(window.SETTLED_AGG.map(r=>({...r,'Category':r.cat})),'Category');
+const sIns=[...new Set(window.SETTLED_AGG.map(r=>r.ins).filter(Boolean))].sort();
 sCities.forEach(v=>document.getElementById('s-city').add(new Option(v,v)));
 sCats.forEach(v=>document.getElementById('s-cat').add(new Option(v,v)));
 sIns.forEach(v=>document.getElementById('s-ins').add(new Option(v.length>35?v.substring(0,35)+'…':v,v)));
@@ -729,7 +729,7 @@ function applyU(){
   const recon=document.getElementById('f-recon').checked;
   const search=document.getElementById('f-search').value.toLowerCase();
 
-  uFiltered=allU.filter(r=>{
+  uFiltered=window.allU.filter(r=>{
     if(city && r['City Bucket']!==city)return false;
     if(cat && r['Category']!==cat)return false;
     if(ins && r['Insurance Name']!==ins)return false;
@@ -766,17 +766,17 @@ function renderU(){
   const bill=fd.reduce((s,r)=>s+(+r['Bill Amount']||0),0);
   const maxD=fd.length?Math.max(...fd.map(r=>r._days||0)):0;
   const oldestR=fd.find(r=>r._days===maxD);
-  const settledTotal = SETTLED_AGG.reduce((s,r)=>s+r.n,0);
-  document.getElementById('u-total').textContent=totalAll.toLocaleString();
+  const settledTotal = window.SETTLED_AGG.reduce((s,r)=>s+r.n,0);
+  document.getElementById('u-total').textContent=window.totalAll.toLocaleString();
   document.getElementById('u-count').textContent=fd.length.toLocaleString();
-  document.getElementById('tab-unsettled-count').textContent=allU.length.toLocaleString();
+  document.getElementById('tab-unsettled-count').textContent=window.allU.length.toLocaleString();
   document.getElementById('tab-settled-count').textContent=settledTotal.toLocaleString();
-  document.getElementById('u-pct').textContent=((fd.length/totalAll)*100).toFixed(1)+'% of total';
+  document.getElementById('u-pct').textContent=((fd.length/window.totalAll)*100).toFixed(1)+'% of total';
   document.getElementById('u-amt').textContent=fmtAmt(bill);
   document.getElementById('u-oldest').textContent=maxD>0?maxD+'d':'--';
   document.getElementById('u-oldest-name').textContent=oldestR?(oldestR['Patient Name']||''):'';
   document.getElementById('u-total-settled').textContent=settledTotal.toLocaleString();
-  document.getElementById('u-settled-pct').textContent=((settledTotal/totalAll)*100).toFixed(1)+'% of total';
+  document.getElementById('u-settled-pct').textContent=((settledTotal/window.totalAll)*100).toFixed(1)+'% of total';
   document.getElementById('u-recon-hero').textContent=fd.filter(isReconYes).length.toLocaleString();
 
   // Buckets
@@ -884,7 +884,7 @@ function pageU(d){ uPage=Math.max(1,Math.min(Math.ceil(uFiltered.length/PS),uPag
 // ── SETTLED ─────────────────────────────────────────────────────────────
 
 // Build month/year dropdowns from data
-const allYMs = [...new Set(SETTLED_AGG.map(r=>r.ym))].sort();
+const allYMs = [...new Set(window.SETTLED_AGG.map(r=>r.ym))].sort();
 const allYears = [...new Set(allYMs.map(y=>y.split('-')[0]))].sort().reverse();
 const mNms = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 allYears.forEach(y=>document.getElementById('s-year').add(new Option(y,y)));
@@ -933,13 +933,13 @@ function ymMatchesPeriod(ym, period, selMonth, selYear){
 }
 
 function quickCount(period){
-  return SETTLED_AGG.filter(r=>r.ym && ymMatchesPeriod(r.ym,period,'','')).reduce((s,r)=>s+r.n,0);
+  return window.SETTLED_AGG.filter(r=>r.ym && ymMatchesPeriod(r.ym,period,'','')).reduce((s,r)=>s+r.n,0);
 }
 
 function filterSettled(period,city,cat,ins){
   const selMonth=document.getElementById('s-month')?document.getElementById('s-month').value:'';
   const selYear=document.getElementById('s-year')?document.getElementById('s-year').value:'';
-  return SETTLED_AGG.filter(r=>{
+  return window.SETTLED_AGG.filter(r=>{
     if(!r.ym) return false;
     if(!ymMatchesPeriod(r.ym,period,selMonth,selYear)) return false;
     if(city && r.city!==city) return false;
@@ -950,7 +950,7 @@ function filterSettled(period,city,cat,ins){
 }
 
 function downloadCSV(mode){
-  const rows = mode==='all' ? [...allU] : [...uFiltered];
+  const rows = mode==='all' ? [...window.allU] : [...uFiltered];
   rows.sort((a,b)=>{
     let av=uSort==='_days'?a._days??-1:uSort==='Bill Amount'?+a['Bill Amount']||0:a[uSort]??'';
     let bv=uSort==='_days'?b._days??-1:uSort==='Bill Amount'?+b['Bill Amount']||0:b[uSort]??'';
