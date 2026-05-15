@@ -699,6 +699,15 @@ sCities.forEach(v=>document.getElementById('s-city').add(new Option(v,v)));
 sCats.forEach(v=>document.getElementById('s-cat').add(new Option(v,v)));
 sIns.forEach(v=>document.getElementById('s-ins').add(new Option(v.length>35?v.substring(0,35)+'…':v,v)));
 
+  // Build month/year dropdowns for settled tab
+  const allYMs2 = [...new Set(window.SETTLED_AGG.map(r=>r.ym))].sort();
+  const allYears2 = [...new Set(allYMs2.map(y=>y.split('-')[0]))].sort().reverse();
+  const mNms2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const sYearEl = document.getElementById('s-year');
+  const sMonthEl = document.getElementById('s-month');
+  if(sYearEl) { while(sYearEl.options.length>1) sYearEl.remove(1); allYears2.forEach(y=>sYearEl.add(new Option(y,y))); }
+  if(sMonthEl) { while(sMonthEl.options.length>1) sMonthEl.remove(1); for(let m=1;m<=12;m++) sMonthEl.add(new Option(mNms2[m-1],String(m).padStart(2,'0'))); }
+
   applyU();
   applyS();
 }
@@ -883,14 +892,7 @@ function pageU(d){ uPage=Math.max(1,Math.min(Math.ceil(uFiltered.length/PS),uPag
 
 // ── SETTLED ─────────────────────────────────────────────────────────────
 
-// Build month/year dropdowns from data
-const allYMs = [...new Set(window.SETTLED_AGG.map(r=>r.ym))].sort();
-const allYears = [...new Set(allYMs.map(y=>y.split('-')[0]))].sort().reverse();
-const mNms = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-allYears.forEach(y=>document.getElementById('s-year').add(new Option(y,y)));
-for(let m=1;m<=12;m++){
-  document.getElementById('s-month').add(new Option(mNms[m-1], String(m).padStart(2,'0')));
-}
+// Month/year dropdowns built in initDashboard after data loads
 
 function onPeriodChange(){
   const v=document.getElementById('s-period').value;
