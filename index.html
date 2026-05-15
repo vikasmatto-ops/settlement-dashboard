@@ -562,35 +562,27 @@ const FALLBACK_SETTLED = [{"ym":"2024-01","city":"Bangalore","cat":"AESTHETICS /
 
 // ── LIVE DATA LOADER ──────────────────────────────────────────────────
 async function loadData() {
+  // Step 1: Load snapshot immediately — no waiting
   showLoading(true);
+  setTimeout(() => {
+    showLoading(false);
+    document.getElementById('header-sub').textContent =
+      'Snapshot · ' + new Date().toLocaleDateString('en-IN') + ' · Checking for live data...';
+    initDashboard(FALLBACK_UNSETTLED, FALLBACK_SETTLED);
+    // Step 2: Try live fetch in background silently
+    tryLiveFetch();
+  }, 100);
+}
 
-  // Try live fetch with a hard 5s timeout, then always fall back to snapshot
-  let liveData = null;
+async function tryLiveFetch() {
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
+    setTimeout(() => controller.abort(), 8000);
     const resp = await fetch(CSV_URL, {signal: controller.signal});
-    clearTimeout(timer);
     const text = await resp.text();
-    if (text && text.includes(',') && !text.trim().startsWith('<')) {
-      liveData = Papa.parse(text, {header:true, skipEmptyLines:true}).data;
-    }
-  } catch(e) {
-    console.warn('Live fetch failed:', e.message);
-  }
-
-  if (!liveData || liveData.length === 0) {
-    // Use embedded snapshot
-    document.getElementById('header-sub').textContent =
-      'Snapshot data · ' + new Date().toLocaleDateString('en-IN');
-    showLoading(false);
-    initDashboard(FALLBACK_UNSETTLED, FALLBACK_SETTLED);
-    return;
-  }
-
-  try {
-    const raw = liveData;
-    if (!raw || raw.length === 0) throw new Error('empty');
+    if (!text || !text.includes(',') || text.trim().startsWith('<')) return;
+    const raw = Papa.parse(text, {header:true, skipEmptyLines:true}).data;
+    if (!raw || raw.length < 100) return;
 
     const rows = raw.map(r => {
       const clean = {};
@@ -618,19 +610,18 @@ async function loadData() {
       aggMap[key].sett += parseInt(r['Settlement Amount']||0)||0;
     });
 
+    // Live data loaded — reinitialize dashboard with fresh data
     document.getElementById('header-sub').textContent =
-      `Live · ${rows.length.toLocaleString()} rows · ${new Date().toLocaleTimeString('en-IN')}`;
-    showLoading(false);
+      'Live · ' + rows.length.toLocaleString() + ' rows · ' + new Date().toLocaleTimeString('en-IN');
     initDashboard(unsettledRows, Object.values(aggMap));
-
+    console.log('Live data loaded successfully');
   } catch(e) {
-    console.warn('Processing error, using snapshot:', e.message);
     document.getElementById('header-sub').textContent =
-      'Snapshot data · ' + new Date().toLocaleDateString('en-IN');
-    showLoading(false);
-    initDashboard(FALLBACK_UNSETTLED, FALLBACK_SETTLED);
+      'Snapshot · ' + new Date().toLocaleDateString('en-IN');
+    console.warn('Live fetch failed:', e.message);
   }
 }
+
 
 function parseSettlementDate(s) {
   if (!s) return null;
