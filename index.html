@@ -679,7 +679,7 @@ function isReconYes(r){ return(r['Recon Upfront']||'').trim().toLowerCase()==='y
 
 // ── INIT (called after data loads) ────────────────────────────────────
 function initDashboard(unsettledRows, settledAgg){
-  ###window.SETTLED_AGG_ASSIGN###
+  window.SETTLED_AGG = settledAgg;
   window.allU = unsettledRows.map(r=>({...r,_days:daysBetween(r['DOD']),_bucket:getBucket(daysBetween(r['DOD']))}));
   const today=new Date(); today.setHours(0,0,0,0);
   document.getElementById('today-disp').textContent=today.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
