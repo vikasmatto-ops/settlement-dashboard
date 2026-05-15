@@ -198,7 +198,7 @@ table.data-tbl tr:last-child td{border-bottom:none;}
 #error-box{display:none;margin:40px auto;max-width:480px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:24px;}
 
 /* ── HIDDEN ── */
-.hidden{display:none!important;}
+.hidden{display:none;}
 
 @media(max-width:900px){
   .sidebar{display:none;}
@@ -228,7 +228,7 @@ table.data-tbl tr:last-child td{border-bottom:none;}
 </div>
 
 <!-- DASHBOARD -->
-<div id="dashboard-content" class="hidden" style="display:none;">
+<div id="dashboard-content" style="display:none;">
 <div style="display:flex;">
 
 <!-- SIDEBAR -->
@@ -633,9 +633,7 @@ function parseSettlementDate(s) {
 
 function showLoading(show) {
   document.getElementById('loading-screen').style.display = show ? 'flex' : 'none';
-  const dc = document.getElementById('dashboard-content');
-  if(show){ dc.style.display='none'; dc.classList.add('hidden'); }
-  else { dc.style.display='block'; dc.classList.remove('hidden'); }
+  document.getElementById('dashboard-content').style.display = show ? 'none' : 'flex';
 }
 
 let uFiltered=[], uPage=1, uSort='_days', uAsc=false;
