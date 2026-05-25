@@ -404,6 +404,7 @@ table.dtbl tr:last-child td{border-bottom:none;}
         <select class="sel" id="sp-cat"  onchange="renderSettled()"><option value="">All Categories</option></select>
         <select class="sel" id="sp-ins"  onchange="renderSettled()"><option value="">All Insurers</option></select>
         <button class="btn-clr" onclick="clearSFilters()">&#x2715; Reset</button>
+        <button class="btn-dl primary" onclick="dlSettledCSV()">&#x2193; Download Settled</button>
       </div>
       <div class="s-kpis">
         <div class="s-kpi" style="border-top:3px solid #3b82f6;border-radius:10px;padding:16px 18px;">
@@ -655,12 +656,33 @@ function renderTable(){
 function sortBy(col){if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=false;}renderTable();}
 function changePage(d){page=Math.max(1,Math.min(Math.ceil(filtered.length/PS),page+d));renderTable();}
 
+let SR=[];
+
+function dlSettledCSV(){
+  const rows=[...SR];
+  if(!rows.length){alert("No settled data available. Please load live data from Google Sheets.");return;}
+  const city=document.getElementById("sp-city")?.value||"";
+  const cat=document.getElementById("sp-cat")?.value||"";
+  const ins=document.getElementById("sp-ins")?.value||"";
+  let filtered=rows;
+  if(city||cat||ins)filtered=rows.filter(r=>(city?(r["City Bucket"]||"")===city:true)&&(cat?(r["Category"]||"")===cat:true)&&(ins?(r["Insurance Name"]||"")===ins:true));
+  if(!filtered.length)filtered=rows;
+  const hdr=["Claim No","IPD ID","Patient Name","Category","DOD","Hospital Name","City","Insurance Name","Bill Amount","Recon Upfront"];
+  const lines=[hdr.join(",")];
+  filtered.forEach(r=>{
+    const vals=[r["Claim No"]||"",r["IPD ID"]||"",r["Patient Name"]||"",r["Category"]||"",r["DOD"]||"",r["Hospital Name"]||"",r["City Bucket"]||"",r["Insurance Name"]||"",r["Bill Amount"]||0,r["Recon Upfront"]||""];
+    lines.push(vals.map(v=>{const s=String(v).replace(/"/g,"\"\"");return /[,\"\n]/.test(s)?`"${s}"`:s;}).join(","));
+  });
+  const blob=new Blob([lines.join("\n")],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="settled_cases.csv";a.click();
+}
+
 function dlCSV(mode){
   const rows=mode==='all'?[...AU]:[...filtered];
   const bL=['0-30d','30-60d','60-90d','90-120d','120+d'];
-  const hdr=['IPD ID','Patient Name','Category','DOD','Days Outstanding','Hospital Name','City','Insurance Name','Bill Amount','Settlement Status','Recon Upfront','Aging Bucket'];
+  const hdr=['IPD ID','Claim No','Patient Name','Category','DOD','Days Outstanding','Hospital Name','City','Insurance Name','Bill Amount','Settlement Status','Recon Upfront','Aging Bucket'];
   const csv=[hdr.join(','),...rows.map(r=>{
-    const vals=[r['IPD ID']||'',r['Patient Name']||'',r['Category']||'',r['DOD']||'',r._days??'',r['Hospital Name']||'',r['City Bucket']||'',r['Insurance Name']||'',r['Bill Amount']||0,r['Settlement Status']||'',r['Recon Upfront']||'',r._bucket>=0?bL[r._bucket]||'':''];
+    const vals=[r['IPD ID']||'',r['Claim No']||'',r['Patient Name']||'',r['Category']||'',r['DOD']||'',r._days??'',r['Hospital Name']||'',r['City Bucket']||'',r['Insurance Name']||'',r['Bill Amount']||0,r['Settlement Status']||'',r['Recon Upfront']||'',r._bucket>=0?bL[r._bucket]||'':''];
     return vals.map(v=>{const s=String(v).replace(/"/g,'""');return s.includes(',')||s.includes('"')?'"'+s+'"':s;}).join(',');
   })].join('\n');
   const a=document.createElement('a');
@@ -800,6 +822,7 @@ function showTab(tab){
     const rows=raw.map(r=>{const c={};Object.keys(r).forEach(k=>c[k.trim()]=(r[k]||'').toString().trim());let cb=(c['City Bucket']||'').replace(/bengaluru/i,'Bangalore');c['City Bucket']=cb.charAt(0).toUpperCase()+cb.slice(1).toLowerCase();return c;});
     const isSett=r=>/^done$/i.test((r['Settlement Status']||'').trim());
     const uRows=rows.filter(r=>!isSett(r));
+    SR=rows.filter(isSett);
     const aggMap={};
     rows.filter(isSett).forEach(r=>{
       const nd=r['New Date']||'';if(!nd)return;
