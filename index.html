@@ -667,10 +667,10 @@ function dlSettledCSV(){
   let filtered=rows;
   if(city||cat||ins)filtered=rows.filter(r=>(city?(r["City Bucket"]||"")===city:true)&&(cat?(r["Category"]||"")===cat:true)&&(ins?(r["Insurance Name"]||"")===ins:true));
   if(!filtered.length)filtered=rows;
-  const hdr=["Claim No","IPD ID","Patient Name","Category","DOD","Hospital Name","City","Insurance Name","Bill Amount","Recon Upfront"];
+  const hdr=["Claim No","IPD ID","Patient Name","Category","DOD","Hospital Name","City","Insurance Name","Bill Amount","Settlement Amount","Recon Upfront"];
   const lines=[hdr.join(",")];
   filtered.forEach(r=>{
-    const vals=[r["Claim No"]||"",r["IPD ID"]||"",r["Patient Name"]||"",r["Category"]||"",r["DOD"]||"",r["Hospital Name"]||"",r["City Bucket"]||"",r["Insurance Name"]||"",r["Bill Amount"]||0,r["Recon Upfront"]||""];
+    const vals=[r["Claim No"]||"",r["IPD ID"]||"",r["Patient Name"]||"",r["Category"]||"",r["DOD"]||"",r["Hospital Name"]||"",r["City Bucket"]||"",r["Insurance Name"]||"",r["Bill Amount"]||0,r["Settlement Amount"]||0,r["Recon Upfront"]||""];
     lines.push(vals.map(v=>{const s=String(v).replace(/"/g,"\"\"");return /[,\"\n]/.test(s)?`"${s}"`:s;}).join(","));
   });
   const blob=new Blob([lines.join("\n")],{type:"text/csv"});
