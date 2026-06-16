@@ -324,7 +324,7 @@ table.dtbl tr:last-child td{border-bottom:none;}
         <div class="divdr"></div>
         <label class="recon-lbl"><input type="checkbox" id="fc-recon" onchange="applyUFilters()"> Recon Upfront Only</label>
         <input class="srch" id="fc-search" placeholder="Search patient / hospital..." oninput="applyUFilters()">
-        <select class="sel" id="fc-dod-month" onchange="applyUFilters()">   <option value="">All Months</option>   <option value="01">Jan</option><option value="02">Feb</option>   <option value="03">Mar</option><option value="04">Apr</option>   <option value="05">May</option><option value="06">Jun</option>   <option value="07">Jul</option><option value="08">Aug</option>   <option value="09">Sep</option><option value="10">Oct</option>   <option value="11">Nov</option><option value="12">Dec</option> </select> <select class="sel" id="fc-dod-year" onchange="applyUFilters()">   <option value="">All Years</option>   <option value="2024">2024</option>   <option value="2025">2025</option>   <option value="2026">2026</option> </select> <button class="btn-clr" onclick="clearUFilters()">&#x2715; Reset</button>
+        <button class="btn-clr" onclick="clearUFilters()">&#x2715; Reset</button>
       </div>
       <div class="two-col">
         <div class="panel">
@@ -406,6 +406,11 @@ table.dtbl tr:last-child td{border-bottom:none;}
               <th>Category</th>
               <th>DOD</th>
               <th>Days</th>
+              <th style="color:#b45309">0-30d</th>
+              <th style="color:#1d4ed8">30-60d</th>
+              <th style="color:#6d28d9">60-90d</th>
+              <th style="color:#dc2626">90-120d</th>
+              <th style="color:#be185d">120d+</th>
               <th>Bill Amt</th>
               <th>Status</th>
               <th>Recon</th>
@@ -543,6 +548,7 @@ function init(uRows,sAgg){
   const today=new Date();
   document.getElementById('top-date').textContent=today.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
   AU=uRows.map(r=>({...r,_days:daysAgo(r['DOD']),_bucket:bkt(daysAgo(r['DOD']))}));
+  render2L();
   SF=sAgg;
   const totalAll=AU.length+SF.reduce((s,r)=>s+r.n,0);
   const settledCount=SF.reduce((s,r)=>s+r.n,0);
@@ -683,7 +689,7 @@ function renderTable(){
   document.getElementById('pg-info').textContent='Page '+page+' of '+pages;
   document.getElementById('pg-prev').disabled=page<=1;
   document.getElementById('pg-next').disabled=page>=pages;
-  document.getElementById('tbl-body').innerHTML=sd.slice(start,start+PS).map(r=>'<tr><td>'+(r['Patient Name']||'—')+'</td><td title="'+(r['Hospital Name']||'')+'">'+(r['Hospital Name']||'—').slice(0,26)+'</td><td>'+(r['City Bucket']||'—')+'</td><td title="'+(r['Insurance Name']||'')+'">'+(r['Insurance Name']||'—').slice(0,20)+'</td><td>'+(r['Category']||'—')+'</td><td>'+(r['DOD']||'—')+'</td><td>'+daysTag(r._days)+'</td><td>'+fmt(+r['Bill Amount']||0)+'</td><td>'+statusTag(r['Settlement Status'])+'</td><td class="'+(isRecon(r)?'ry':'rn')+'">'+(isRecon(r)?'YES':'—')+'</td></tr>').join('');
+  document.getElementById('tbl-body').innerHTML=sd.slice(start,start+PS).map(r=>'<tr><td>'+(r['Patient Name']||'—')+'</td><td title="'+(r['Hospital Name']||'')+'">'+(r['Hospital Name']||'—').slice(0,26)+'</td><td>'+(r['City Bucket']||'—')+'</td><td title="'+(r['Insurance Name']||'')+'">'+(r['Insurance Name']||'—').slice(0,20)+'</td><td>'+(r['Category']||'—')+'</td><td>'+(r['DOD']||'—')+'</td><td>'+daysTag(r._days)+'</td>'+'<td style="color:#b45309;text-align:center">'+(r._bucket===0?r._days:'')+'</td>'+'<td style="color:#1d4ed8;text-align:center">'+(r._bucket===1?r._days:'')+'</td>'+'<td style="color:#6d28d9;text-align:center">'+(r._bucket===2?r._days:'')+'</td>'+'<td style="color:#dc2626;text-align:center">'+(r._bucket===3?r._days:'')+'</td>'+'<td style="color:#be185d;text-align:center">'+(r._bucket===4?r._days:'')+'</td>'+'<td>'+fmt(+r['Bill Amount']||0)+'</td><td>'+statusTag(r['Settlement Status'])+'</td><td class="'+(isRecon(r)?'ry':'rn')+'">'+(isRecon(r)?'YES':'—')+'</td></tr>').join('');
 }
 
 function sortBy(col){if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=false;}renderTable();}
@@ -691,7 +697,7 @@ function changePage(d){page=Math.max(1,Math.min(Math.ceil(filtered.length/PS),pa
 
 function render2L(){
   const rows2L=[...AU].filter(r=>(!r['Settlement Status']||!/^done$/i.test((r['Settlement Status']||'').trim()))&&(+r['Bill Amount']||0)>200000);
-  document.getElementById('tbl2L-cnt').textContent=rows2L.length+' records';   const total2LBill=rows2L.reduce((s,r)=>s+(+r['Bill Amount']||0),0);   const kpiCount=document.getElementById('tbl2L-kpi-count');   const kpiAmt=document.getElementById('tbl2L-kpi-amount');   if(kpiCount)kpiCount.textContent=rows2L.length;   if(kpiAmt)kpiAmt.textContent=fmt(total2LBill);
+  document.getElementById('tbl2L-cnt').textContent=rows2L.length+' records';
   document.getElementById('tbl2L-body').innerHTML=rows2L.map(r=>'<tr><td>'+(r['Patient Name']||'\u2014')+'</td><td title="'+(r['Hospital Name']||'')+'">'+(r['Hospital Name']||'\u2014').slice(0,26)+'</td><td>'+(r['City Bucket']||'\u2014')+'</td><td title="'+(r['Insurance Name']||'')+'">'+(r['Insurance Name']||'\u2014').slice(0,20)+'</td><td>'+(r['Category']||'\u2014')+'</td><td>'+(r['DOD']||'\u2014')+'</td><td>'+daysTag(r._days)+'</td><td>'+fmt(+r['Bill Amount']||0)+'</td><td>'+statusTag(r['Settlement Status'])+'</td><td class="'+(isRecon(r)?'ry':'rn')+'">'+(isRecon(r)?'YES':'\u2014')+'</td></tr>').join('');
 }
 
@@ -711,14 +717,28 @@ function dl2LCSV(){
 let SR=[];
 
 function dlSettledCSV(){
-  const rows=[...SR];
-  if(!rows.length){alert("No settled data available. Please load live data from Google Sheets.");return;}
+  if(!SR||!SR.length){alert("No settled data available. Please load live data from Google Sheets.");return;}
+  const period=document.getElementById("sp-period").value;
   const city=document.getElementById("sp-city")?.value||"";
   const cat=document.getElementById("sp-cat")?.value||"";
   const ins=document.getElementById("sp-ins")?.value||"";
-  let filtered=rows;
-  if(city||cat||ins)filtered=rows.filter(r=>(city?(r["City Bucket"]||"")===city:true)&&(cat?(r["Category"]||"")===cat:true)&&(ins?(r["Insurance Name"]||"")===ins:true));
-  if(!filtered.length)filtered=rows;
+  const selM=document.getElementById("sp-month").value||"";
+  const selY=document.getElementById("sp-year").value||"";
+  const filtered=SR.filter(r=>{
+    const nd=(r["New Date"]||r["Settlement Date"]||"").trim();
+    if(!nd)return false;
+    const p=nd.split("-");
+    if(p.length!==3)return false;
+    const d=p[0].length===4?new Date(p[0],p[1]-1,p[2]):new Date(p[2],p[1]-1,p[0]);
+    if(isNaN(d)||d.getFullYear()<2020||d.getFullYear()>2030)return false;
+    const ym=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    if(!ymMatch(ym,period,selM,selY))return false;
+    if(city&&(r["City Bucket"]||"")!==city)return false;
+    if(cat&&(r["Category"]||"")!==cat)return false;
+    if(ins&&(r["Insurance Name"]||"")!==ins)return false;
+    return true;
+  });
+  if(!filtered.length){alert("No data matches the selected filters.");return;}
   const hdr=['IPD ID','Lead Prospect ID','Patient Name','Category','DOD','Discharge Done Date (By Insurance)','Hospital Name','City','City Bucket','Insurance Name','TPA Name','Corporate/Individual','GIPSA/Non GIPSA','Bill Amount','Approval Amount','Settlement Amount','Claim No','UTR Amount','Follow up Done','Settlement Status','Settlement UTR','Settlement Date','Current status','Recon Upfront','New Date','Remarks','Settlement correct'];
   const lines=[hdr.join(",")];
   filtered.forEach(r=>{
