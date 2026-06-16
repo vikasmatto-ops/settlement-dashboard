@@ -392,7 +392,18 @@ table.dtbl tr:last-child td{border-bottom:none;}
             <div class="tbl-title">&#9888; High Value Unsettled &mdash; Above ₹2 Lakh</div>
             <div class="tbl-cnt" id="tbl2L-cnt">-- records</div>
           </div>
-          <div class="tbl-actions">
+          <div style="display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 16px;min-width:120px;">
+              <div style="font-size:9px;font-weight:700;color:#b91c1c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Cases</div>
+              <div id="tbl2L-kpi-count" style="font-size:24px;font-weight:800;color:#dc2626;">--</div>
+            </div>
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 16px;min-width:160px;">
+              <div style="font-size:9px;font-weight:700;color:#c2410c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Total Bill</div>
+              <div id="tbl2L-kpi-amount" style="font-size:20px;font-weight:800;color:#ea580c;font-family:'JetBrains Mono',monospace;">--</div>
+            </div>
+          </div>
+          <div class="bucket-row" id="tbl2L-buckets" style="margin-top:12px;"></div>
+          <div class="tbl-actions" style="margin-top:8px;">
             <button class="btn-dl primary" onclick="dl2LCSV()">&#x2193; Download 2L+ Cases</button>
           </div>
         </div>
@@ -689,7 +700,7 @@ function renderTable(){
   document.getElementById('pg-info').textContent='Page '+page+' of '+pages;
   document.getElementById('pg-prev').disabled=page<=1;
   document.getElementById('pg-next').disabled=page>=pages;
-  document.getElementById('tbl-body').innerHTML=sd.slice(start,start+PS).map(r=>'<tr><td>'+(r['Patient Name']||'—')+'</td><td title="'+(r['Hospital Name']||'')+'">'+(r['Hospital Name']||'—').slice(0,26)+'</td><td>'+(r['City Bucket']||'—')+'</td><td title="'+(r['Insurance Name']||'')+'">'+(r['Insurance Name']||'—').slice(0,20)+'</td><td>'+(r['Category']||'—')+'</td><td>'+(r['DOD']||'—')+'</td><td>'+daysTag(r._days)+'</td>'+'<td style="color:#b45309;text-align:center">'+(r._bucket===0?r._days:'')+'</td>'+'<td style="color:#1d4ed8;text-align:center">'+(r._bucket===1?r._days:'')+'</td>'+'<td style="color:#6d28d9;text-align:center">'+(r._bucket===2?r._days:'')+'</td>'+'<td style="color:#dc2626;text-align:center">'+(r._bucket===3?r._days:'')+'</td>'+'<td style="color:#be185d;text-align:center">'+(r._bucket===4?r._days:'')+'</td>'+'<td>'+fmt(+r['Bill Amount']||0)+'</td><td>'+statusTag(r['Settlement Status'])+'</td><td class="'+(isRecon(r)?'ry':'rn')+'">'+(isRecon(r)?'YES':'—')+'</td></tr>').join('');
+  document.getElementById('tbl-body').innerHTML=sd.slice(start,start+PS).map(r=>'<tr><td>'+(r['Patient Name']||'—')+'</td><td title="'+(r['Hospital Name']||'')+'">'+(r['Hospital Name']||'—').slice(0,26)+'</td><td>'+(r['City Bucket']||'—')+'</td><td title="'+(r['Insurance Name']||'')+'">'+(r['Insurance Name']||'—').slice(0,20)+'</td><td>'+(r['Category']||'—')+'</td><td>'+(r['DOD']||'—')+'</td><td>'+daysTag(r._days)+'</td><td>'+fmt(+r['Bill Amount']||0)+'</td><td>'+statusTag(r['Settlement Status'])+'</td><td class="'+(isRecon(r)?'ry':'rn')+'">'+(isRecon(r)?'YES':'—')+'</td></tr>').join('');
 }
 
 function sortBy(col){if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=false;}renderTable();}
@@ -698,7 +709,22 @@ function changePage(d){page=Math.max(1,Math.min(Math.ceil(filtered.length/PS),pa
 function render2L(){
   const rows2L=[...AU].filter(r=>(!r['Settlement Status']||!/^done$/i.test((r['Settlement Status']||'').trim()))&&(+r['Bill Amount']||0)>200000);
   document.getElementById('tbl2L-cnt').textContent=rows2L.length+' records';
-  document.getElementById('tbl2L-body').innerHTML=rows2L.map(r=>'<tr><td>'+(r['Patient Name']||'\u2014')+'</td><td title="'+(r['Hospital Name']||'')+'">'+(r['Hospital Name']||'\u2014').slice(0,26)+'</td><td>'+(r['City Bucket']||'\u2014')+'</td><td title="'+(r['Insurance Name']||'')+'">'+(r['Insurance Name']||'\u2014').slice(0,20)+'</td><td>'+(r['Category']||'\u2014')+'</td><td>'+(r['DOD']||'\u2014')+'</td><td>'+daysTag(r._days)+'</td><td>'+fmt(+r['Bill Amount']||0)+'</td><td>'+statusTag(r['Settlement Status'])+'</td><td class="'+(isRecon(r)?'ry':'rn')+'">'+(isRecon(r)?'YES':'\u2014')+'</td></tr>').join('');
+  const totalBill=rows2L.reduce((s,r)=>s+(+r['Bill Amount']||0),0);
+  const kc=document.getElementById('tbl2L-kpi-count');const ka=document.getElementById('tbl2L-kpi-amount');
+  if(kc)kc.textContent=rows2L.length;if(ka)ka.textContent=fmt(totalBill);
+  const bCounts=[0,0,0,0,0];const bAmts=[0,0,0,0,0];
+  rows2L.forEach(r=>{const b=r._bucket??4;if(b>=0&&b<=4){bCounts[b]++;bAmts[b]+=(+r['Bill Amount']||0);}});
+  const bLabels=['0–30 Days','30–60 Days','60–90 Days','90–120 Days','120+ Days'];
+  const bColors=['amber','blue','purple','red','pink'];
+  const bDiv=document.getElementById('tbl2L-buckets');
+  if(bDiv)bDiv.innerHTML=bCounts.map((n,i)=>'<div class="bkt '+bColors[i]+'" style="cursor:default"><div class="bkt-range">'+bLabels[i]+'</div><div class="bkt-num">'+n+'</div><div class="bkt-sub">cases</div><div class="bkt-amt">'+fmt(bAmts[i])+'</div></div>').join('');
+  document.getElementById('tbl2L-body').innerHTML=rows2L.map(r=>'<tr><td>'+(r['Patient Name']||'\u2014')+'</td><td title="'+(r['Hospital Name']||'')+'">'+(r['Hospital Name']||'\u2014').slice(0,26)+'</td><td>'+(r['City Bucket']||'\u2014')+'</td><td title="'+(r['Insurance Name']||'')+'">'+(r['Insurance Name']||'\u2014').slice(0,20)+'</td><td>'+(r['Category']||'\u2014')+'</td><td>'+(r['DOD']||'\u2014')+'</td><td>'+daysTag(r._days)+'</td>'
+    +'<td style="color:#b45309;text-align:center;font-weight:600">'+(r._bucket===0?r._days:'')+'</td>'
+    +'<td style="color:#1d4ed8;text-align:center;font-weight:600">'+(r._bucket===1?r._days:'')+'</td>'
+    +'<td style="color:#6d28d9;text-align:center;font-weight:600">'+(r._bucket===2?r._days:'')+'</td>'
+    +'<td style="color:#dc2626;text-align:center;font-weight:600">'+(r._bucket===3?r._days:'')+'</td>'
+    +'<td style="color:#be185d;text-align:center;font-weight:600">'+(r._bucket===4?r._days:'')+'</td>'
+    +'<td>'+fmt(+r['Bill Amount']||0)+'</td><td>'+statusTag(r['Settlement Status'])+'</td><td class="'+(isRecon(r)?'ry':'rn')+'">'+(isRecon(r)?'YES':'\u2014')+'</td></tr>').join('');
 }
 
 function dl2LCSV(){
@@ -724,6 +750,7 @@ function dlSettledCSV(){
   const ins=document.getElementById("sp-ins")?.value||"";
   const selM=document.getElementById("sp-month").value||"";
   const selY=document.getElementById("sp-year").value||"";
+  const selDay=parseInt(document.getElementById("sp-day")?.value||"0")||0;
   const filtered=SR.filter(r=>{
     const nd=(r["New Date"]||r["Settlement Date"]||"").trim();
     if(!nd)return false;
@@ -733,6 +760,7 @@ function dlSettledCSV(){
     if(isNaN(d)||d.getFullYear()<2020||d.getFullYear()>2030)return false;
     const ym=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
     if(!ymMatch(ym,period,selM,selY))return false;
+    if(selDay&&d.getDate()!==selDay)return false;
     if(city&&(r["City Bucket"]||"")!==city)return false;
     if(cat&&(r["Category"]||"")!==cat)return false;
     if(ins&&(r["Insurance Name"]||"")!==ins)return false;
