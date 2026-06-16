@@ -324,7 +324,7 @@ table.dtbl tr:last-child td{border-bottom:none;}
         <div class="divdr"></div>
         <label class="recon-lbl"><input type="checkbox" id="fc-recon" onchange="applyUFilters()"> Recon Upfront Only</label>
         <input class="srch" id="fc-search" placeholder="Search patient / hospital..." oninput="applyUFilters()">
-        <button class="btn-clr" onclick="clearUFilters()">&#x2715; Reset</button>
+        <select class="sel" id="fc-dod-month" onchange="applyUFilters()">   <option value="">All Months</option>   <option value="01">Jan</option><option value="02">Feb</option>   <option value="03">Mar</option><option value="04">Apr</option>   <option value="05">May</option><option value="06">Jun</option>   <option value="07">Jul</option><option value="08">Aug</option>   <option value="09">Sep</option><option value="10">Oct</option>   <option value="11">Nov</option><option value="12">Dec</option> </select> <select class="sel" id="fc-dod-year" onchange="applyUFilters()">   <option value="">All Years</option>   <option value="2024">2024</option>   <option value="2025">2025</option>   <option value="2026">2026</option> </select> <button class="btn-clr" onclick="clearUFilters()">&#x2715; Reset</button>
       </div>
       <div class="two-col">
         <div class="panel">
@@ -691,7 +691,7 @@ function changePage(d){page=Math.max(1,Math.min(Math.ceil(filtered.length/PS),pa
 
 function render2L(){
   const rows2L=[...AU].filter(r=>(!r['Settlement Status']||!/^done$/i.test((r['Settlement Status']||'').trim()))&&(+r['Bill Amount']||0)>200000);
-  document.getElementById('tbl2L-cnt').textContent=rows2L.length+' records';
+  document.getElementById('tbl2L-cnt').textContent=rows2L.length+' records';   const total2LBill=rows2L.reduce((s,r)=>s+(+r['Bill Amount']||0),0);   const kpiCount=document.getElementById('tbl2L-kpi-count');   const kpiAmt=document.getElementById('tbl2L-kpi-amount');   if(kpiCount)kpiCount.textContent=rows2L.length;   if(kpiAmt)kpiAmt.textContent=fmt(total2LBill);
   document.getElementById('tbl2L-body').innerHTML=rows2L.map(r=>'<tr><td>'+(r['Patient Name']||'\u2014')+'</td><td title="'+(r['Hospital Name']||'')+'">'+(r['Hospital Name']||'\u2014').slice(0,26)+'</td><td>'+(r['City Bucket']||'\u2014')+'</td><td title="'+(r['Insurance Name']||'')+'">'+(r['Insurance Name']||'\u2014').slice(0,20)+'</td><td>'+(r['Category']||'\u2014')+'</td><td>'+(r['DOD']||'\u2014')+'</td><td>'+daysTag(r._days)+'</td><td>'+fmt(+r['Bill Amount']||0)+'</td><td>'+statusTag(r['Settlement Status'])+'</td><td class="'+(isRecon(r)?'ry':'rn')+'">'+(isRecon(r)?'YES':'\u2014')+'</td></tr>').join('');
 }
 
